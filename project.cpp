@@ -68,3 +68,25 @@ Parcel* insertParcel(Parcel** root, const char* destination, int weight, float v
 
     return newParcel;
 }
+
+
+Parcel* searchParcel(Parcel* root, int weight) {
+    if (root == NULL || root->weight == weight) {
+        return root;
+    }
+    if (weight < root->weight) {
+        return searchParcel(root->left, weight);
+    }
+    else {
+        return searchParcel(root->right, weight);
+    }
+}
+
+void printParcel(Parcel* parcel) {
+    if (parcel) {
+        printf("Destination: %s, Weight: %d, Valuation: %.2f\n", parcel->destination, parcel->weight, parcel->valuation);
+    }
+    else {
+        printf("Parcel not found.\n");
+    }
+}
