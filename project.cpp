@@ -90,3 +90,26 @@ void printParcel(Parcel* parcel) {
         printf("Parcel not found.\n");
     }
 }
+
+Parcel* searchParcelByDestination(Parcel* root, const char* destination) {
+    if (root == NULL) {
+        return NULL;
+    }
+    if (strcmp(root->destination, destination) == 0) {
+        return root;
+    }
+    Parcel* found = searchParcelByDestination(root->left, destination);
+    if (found != NULL) {
+        return found;
+    }
+    return searchParcelByDestination(root->right, destination);
+}
+
+void printAllParcels(Parcel* root) {
+    if (root == NULL) {
+        return;
+    }
+    printAllParcels(root->left);
+    printParcel(root);
+    printAllParcels(root->right);
+}
