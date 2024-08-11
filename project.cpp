@@ -141,3 +141,36 @@ HashTable* createHashTable() {
     }
     return hashTable;
 }
+
+void freeParcel(Parcel* parcel) {
+    if (parcel) {
+        free(parcel->destination);
+        freeParcel(parcel->left);
+        freeParcel(parcel->right);
+        free(parcel);
+    }
+}
+
+void totalLoadAndValuation(Parcel* root, int* totalLoad, float* totalValuation) {
+    if (root == NULL) {
+        return;
+    }
+    *totalLoad += root->weight;
+    *totalValuation += root->valuation;
+    totalLoadAndValuation(root->left, totalLoad, totalValuation);
+    totalLoadAndValuation(root->right, totalLoad, totalValuation);
+}
+
+Parcel* findMin(Parcel* root) {
+    while (root && root->left != NULL) {
+        root = root->left;
+    }
+    return root;
+}
+
+Parcel* findMax(Parcel* root) {
+    while (root && root->right != NULL) {
+        root = root->right;
+    }
+    return root;
+}
