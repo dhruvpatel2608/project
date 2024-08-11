@@ -174,3 +174,29 @@ Parcel* findMax(Parcel* root) {
     }
     return root;
 }
+
+int handleCountryName(char* country, unsigned long* hashIndex, HashTable* hashTable) {
+    printf("Enter country name: ");
+    if (fgets(country, sizeof(country), stdin) == NULL) {
+        printf("Error reading country name.\n");
+        return 0;
+    }
+    country[strcspn(country, "\n")] = '\0'; // Remove newline character
+    *hashIndex = djb2_hash(country);
+
+    // Check if the country exists in the hash table at the given index
+    return isCountryInHashTable(hashTable->table[*hashIndex], country);
+}
+
+int isCountryInHashTable(Parcel* root, const char* country) {
+    return searchParcelByDestination(root, country) != NULL;
+}
+
+void handleWeightInput(int* weight) {
+    printf("Enter weight: ");
+    if (scanf_s("%d", weight) != 1) {
+        printf("Invalid input for weight. Please enter a number.\n");
+        while (getchar() != '\n'); // Clear input buffer
+    }
+    while (getchar() != '\n'); // Clear input buffer
+}
