@@ -200,3 +200,132 @@ void handleWeightInput(int* weight) {
     }
     while (getchar() != '\n'); // Clear input buffer
 }
+
+void handleConditionInput(int* condition) {
+    printf("Enter 1 for higher or 0 for lower: ");
+    if (scanf_s("%d", condition) != 1 || (*condition != 0 && *condition != 1)) {
+        printf("Invalid input. Please enter 0 or 1.\n");
+        while (getchar() != '\n'); // Clear input buffer
+    }
+    while (getchar() != '\n'); // Clear input buffer
+}
+
+void handleUserMenu(HashTable* hashTable) {
+    int choice;
+    char inputBuffer[10];
+    char country[21];
+    int weight;
+    int condition;
+    unsigned long hashIndex;
+    Parcel* foundParcel;
+    int totalLoad;
+    float totalValuation;
+    Parcel* minParcel;
+    Parcel* maxParcel;
+    Parcel* lightestParcel;
+    Parcel* heaviestParcel;
+
+    while (1) {
+        printf("User Menu:\n");
+        printf("1. Enter country name and display all the parcels details\n");
+        printf("2. Enter country and weight pair\n");
+        printf("3. Display the total parcel load and valuation for the country\n");
+        printf("4. Enter the country name and display cheapest and most expensive parcel's details\n");
+        printf("5. Enter the country name and display lightest and heaviest parcel for the country\n");
+        printf("6. Exit the application\n");
+        printf("Enter your choice: ");
+
+        // Get the entire input line as a string
+        if (fgets(inputBuffer, sizeof(inputBuffer), stdin) == NULL || inputBuffer[0] == '\n') {
+            printf("Invalid input. Please select a valid menu option.\n");
+            continue;
+        }
+
+        // Convert input string to an integer
+        choice = atoi(inputBuffer);
+
+        switch (choice) {
+        case 1:
+            if (handleCountryName(country, &hashIndex, hashTable)) {
+                if (hashTable->table[hashIndex] != NULL) {
+                    printAllParcels(hashTable->table[hashIndex], country);
+                }
+                else {
+                    printf("Country '%s' not found in the list.\n", country);
+                }
+            }
+            else {
+                printf("Country '%s' not found in the list.\n", country);
+            }
+            break;
+
+        case 2:
+            if (handleCountryName(country, &hashIndex, hashTable)) {
+                if (hashTable->table[hashIndex] != NULL) {
+                    handleWeightInput(&weight);
+                    handleConditionInput(&condition);
+                    printParcelsWithCondition(hashTable->table[hashIndex], weight, condition, country);
+                }
+                else {
+                    printf("Country '%s' not found in the list.\n", country);
+                }
+            }
+            else {
+                printf("Country '%s' not found in the list.\n", country);
+            }
+            break;
+
+        case 3:
+            if (handleCountryName(country, &hashIndex, hashTable)) {
+                hashTable->table[hashIndex] != NULL && strcmp(hashTable->table[hashIndex]->destination, country) == 0;
+                totalLoad = 0;
+                totalValuation = 0.0f;
+                totalLoadAndValuation(hashTable->table[hashIndex], &totalLoad, &totalValuation);
+                printf("Total Load: %d, Total Valuation: %.2f\n", totalLoad, totalValuation);
+
+            }
+            else {
+                printf("Country '%s' not found in the list.\n", country);
+            }
+            break;
+        case 4:
+            if (handleCountryName(country, &hashIndex, hashTable)) {
+                hashTable->table[hashIndex] != NULL && strcmp(hashTable->table[hashIndex]->destination, country) == 0;
+                minParcel = findMin(hashTable->table[hashIndex]);
+                maxParcel = findMax(hashTable->table[hashIndex]);
+                printf("Cheapest Parcel:\n");
+                printParcel(minParcel);
+                printf("Most Expensive Parcel:\n");
+                printParcel(maxParcel);
+
+            }
+            else {
+                printf("Country '%s' not found in the list.\n", country);
+            }
+            break;
+        case 5:
+            if (handleCountryName(country, &hashIndex, hashTable)) {
+                hashTable->table[hashIndex] != NULL && strcmp(hashTable->table[hashIndex]->destination, country) == 0;
+                lightestParcel = findMin(hashTable->table[hashIndex]);
+                heaviestParcel = findMax(hashTable->table[hashIndex]);
+                printf("Lightest Parcel:\n");
+                printParcel(lightestParcel);
+                printf("Heaviest Parcel:\n");
+                printParcel(heaviestParcel);
+
+            }
+            else {
+                printf("Country '%s' not found in the list.\n", country);
+            }
+            break;
+        case 6:
+            for (int i = 0; i < HASH_TABLE_SIZE; ++i) {
+                freeParcel(hashTable->table[i]);
+            }
+            free(hashTable);
+            return;
+        default:
+            printf("Invalid choice. Please select a valid menu option.\n");
+        }
+    }
+}
