@@ -113,3 +113,31 @@ void printAllParcels(Parcel* root) {
     printParcel(root);
     printAllParcels(root->right);
 }
+
+Void printParcelsWithCondition(Parcel* root, int weight, int condition) {
+    if (root == NULL) {
+        return;
+    }
+
+    // Print parcels based on the weight condition
+    if ((condition == 1 && root->weight > weight) ||
+        (condition == 0 && root->weight < weight)) {
+        printParcel(root);
+    }
+
+    // Recursively check left and right subtrees
+    printParcelsWithCondition(root->left, weight, condition);
+    printParcelsWithCondition(root->right, weight, condition);
+}
+
+HashTable* createHashTable() {
+    HashTable* hashTable = (HashTable*)malloc(sizeof(HashTable));
+    if (hashTable == NULL) {
+        printf("Failed to allocate memory for hash table\n");
+        return NULL;
+    }
+    for (int i = 0; i < HASH_TABLE_SIZE; ++i) {
+        hashTable->table[i] = NULL;
+    }
+    return hashTable;
+}
