@@ -21,13 +21,6 @@ typedef struct HashTable {
     Parcel* table[HASH_TABLE_SIZE];
 } HashTable;
 
-void toLowerCase(char* str) {
-    for (; *str; ++str) {
-        *str = tolower((unsigned char)*str);
-    }
-}
-
-
 unsigned long djb2_hash(const char* str);
 Parcel* createParcel(const char* destination, int weight, float valuation);
 void insertParcel(Parcel** root, const char* destination, int weight, float valuation);
@@ -37,7 +30,7 @@ void printParcel(Parcel* parcel);
 void printAllParcels(Parcel* root);
 void printParcelsWithCondition(Parcel* root, int weight, int condition);
 HashTable* createHashTable();
-void freeParcel(Parcel* parcel);
+void clean(HashTable* hashTable);
 void totalLoadAndValuation(Parcel* root, int* totalLoad, float* totalValuation);
 Parcel* findMin(Parcel* root);
 Parcel* findMax(Parcel* root);
@@ -47,6 +40,15 @@ void handleWeightInput(int* weight);
 void handleConditionInput(int* condition);
 void handleUserMenu(HashTable* hashTable);
 
+/*
+ * FUNCTION: main
+ * DESCRIPTION: Main entry point of the program. Initializes the hash table, reads parcel data from a file,
+ *              inserts parcels into the hash table, and then presents a user menu for interaction with the data.
+ * PARAMETERS: None.
+ * RETURNS: int - Exit status code:
+ *         - 0 if the program completes successfully.
+ *         - 1 if there is an error in creating the hash table or opening/closing the file.
+ */
 int main() {
     HashTable* hashTable = createHashTable();
     if (hashTable == NULL) {
@@ -98,6 +100,12 @@ int main() {
     return 0;
 }
 
+/*
+ * FUNCTION: djb2_hash
+ * DESCRIPTION: Computes a hash value for a given string using the djb2 hash function.
+ * PARAMETERS: const char* str - The string to hash.
+ * RETURNS: The computed hash value as an unsigned long integer.
+ */
 unsigned long djb2_hash(const char* str) {
     unsigned long hash = 5381;
     int c;
@@ -108,7 +116,14 @@ unsigned long djb2_hash(const char* str) {
     return hash % HASH_TABLE_SIZE;
 }
 
-
+/*
+ * FUNCTION: createParcel
+ * DESCRIPTION: Creates a new parcel with the specified destination, weight, and valuation.
+ * PARAMETERS: const char* destination - The destination of the parcel.
+ *             int weight - The weight of the parcel.
+ *             float valuation - The valuation of the parcel.
+ * RETURNS: A pointer to the newly created Parcel.
+ */
 Parcel* createParcel(const char* destination, int weight, float valuation) {
     Parcel* newParcel = (Parcel*)malloc(sizeof(Parcel));
     if (newParcel == NULL) {
@@ -122,13 +137,27 @@ Parcel* createParcel(const char* destination, int weight, float valuation) {
         return NULL;
     }
     strcpy_s(newParcel->destination, strlen(destination) + 1, destination);
-    toLowerCase(newParcel->destination);  // Convert to lowercase
+
+    // Convert destination to lowercase here
+    for (char* p = newParcel->destination; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
+
     newParcel->weight = weight;
     newParcel->valuation = valuation;
     newParcel->left = newParcel->right = NULL;
     return newParcel;
 }
 
+/*
+*FUNCTION: insertParcel
+* DESCRIPTION : Inserts a new parcel into a binary search tree(BST) based on weight.
+* PARAMETERS : Parcel * *root - Pointer to the root of the BST.
+* const char* destination - The destination of the parcel.
+* int weight - The weight of the parcel.
+* float valuation - The valuation of the parcel.
+* RETURNS : None.
+*/
 void insertParcel(Parcel** root, const char* destination, int weight, float valuation) {
     if (*root == NULL) {
         *root = createParcel(destination, weight, valuation);
@@ -142,6 +171,14 @@ void insertParcel(Parcel** root, const char* destination, int weight, float valu
     }
 }
 
+/*
+ * FUNCTION: searchParcel
+ * DESCRIPTION: Searches for a parcel in the BST by weight.
+ * PARAMETERS: Parcel* root - The root of the BST.
+ *             int weight - The weight to search for.
+ * RETURNS: A pointer to the Parcel if found, otherwise NULL.
+ */
+
 Parcel* searchParcel(Parcel* root, int weight) {
     if (root == NULL || root->weight == weight) {
         return root;
@@ -153,6 +190,14 @@ Parcel* searchParcel(Parcel* root, int weight) {
         return searchParcel(root->right, weight);
     }
 }
+
+/*
+ * FUNCTION: searchParcelByDestination
+ * DESCRIPTION: Searches for a parcel in the BST by destination.
+ * PARAMETERS: Parcel* root - The root of the BST.
+ *             const char* destination - The destination to search for.
+ * RETURNS: A pointer to the Parcel if found, otherwise NULL.
+ */
 
 Parcel* searchParcelByDestination(Parcel* root, const char* destination) {
     if (root == NULL) {
@@ -167,7 +212,11 @@ Parcel* searchParcelByDestination(Parcel* root, const char* destination) {
     }
 
     strcpy_s(lowerDestination, strlen(destination) + 1, destination);
-    toLowerCase(lowerDestination);  // Convert to lowercase
+
+    // Convert lowerDestination to lowercase here
+    for (char* p = lowerDestination; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
 
     Parcel* foundParcel = NULL;
     if (strcmp(root->destination, lowerDestination) == 0) {
@@ -186,14 +235,29 @@ Parcel* searchParcelByDestination(Parcel* root, const char* destination) {
     return foundParcel;
 }
 
+/*
+ * FUNCTION: printParcel
+ * DESCRIPTION: Prints the details of a single parcel.
+ * PARAMETERS: Parcel* parcel - The parcel to print.
+ * RETURNS: None.
+ */
+
 void printParcel(Parcel* parcel) {
     if (parcel) {
-        printf("Destination: %s, Weight: %d, Valuation: %.2f\n", parcel->destination, parcel->weight, parcel->valuation);
+        printf("Destination: %s, Weight: %d, Valuation: %.2f\n\n", parcel->destination, parcel->weight, parcel->valuation);
     }
     else {
-        printf("Parcel not found.\n");
+        printf("Parcel not found.\n\n");
     }
 }
+
+/*
+ * FUNCTION: printAllParcels
+ * DESCRIPTION: Prints details of all parcels in the BST that match the given country.
+ * PARAMETERS: Parcel* root - The root of the BST.
+ *             const char* country - The country to match.
+ * RETURNS: None.
+ */
 
 void printAllParcels(Parcel* root, const char* country) {
     if (root == NULL) {
@@ -201,22 +265,44 @@ void printAllParcels(Parcel* root, const char* country) {
     }
     printAllParcels(root->left, country);
 
-    // Print only if the parcel's destination matches the country
-    if (strcmp(root->destination, country) == 0) {
+    // Convert country to lowercase and compare
+    char lowerCountry[21];
+    strcpy_s(lowerCountry, sizeof(lowerCountry), country);
+    for (char* p = lowerCountry; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
+
+    if (strcmp(root->destination, lowerCountry) == 0) {
         printParcel(root);
     }
 
     printAllParcels(root->right, country);
 }
 
+/*
+ * FUNCTION: printParcelsWithCondition
+ * DESCRIPTION: Prints parcels that meet the specified weight condition and match the given country.
+ * PARAMETERS: Parcel* root - The root of the BST.
+ *             int weight - The weight to compare against.
+ *             int condition - The condition (1 for higher, 0 for lower).
+ *             const char* country - The country to match.
+ * RETURNS: None.
+ */
 
 void printParcelsWithCondition(Parcel* root, int weight, int condition, const char* country) {
     if (root == NULL) {
         return;
     }
 
+    // Convert country to lowercase and compare
+    char lowerCountry[21];
+    strcpy_s(lowerCountry, sizeof(lowerCountry), country);
+    for (char* p = lowerCountry; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
+
     // Print parcels based on the weight condition and matching the country
-    if (strcmp(root->destination, country) == 0 &&
+    if (strcmp(root->destination, lowerCountry) == 0 &&
         ((condition == 1 && root->weight > weight) ||
             (condition == 0 && root->weight < weight))) {
         printParcel(root);
@@ -227,7 +313,12 @@ void printParcelsWithCondition(Parcel* root, int weight, int condition, const ch
     printParcelsWithCondition(root->right, weight, condition, country);
 }
 
-
+/*
+ * FUNCTION: createHashTable
+ * DESCRIPTION: Creates a new hash table with initialized entries.
+ * PARAMETERS: None.
+ * RETURNS: A pointer to the newly created HashTable.
+ */
 HashTable* createHashTable() {
     HashTable* hashTable = (HashTable*)malloc(sizeof(HashTable));
     if (hashTable == NULL) {
@@ -240,15 +331,35 @@ HashTable* createHashTable() {
     return hashTable;
 }
 
-void freeParcel(Parcel* parcel) {
-    if (parcel) {
-        free(parcel->destination);
-        freeParcel(parcel->left);
-        freeParcel(parcel->right);
-        free(parcel);
+/*
+ * FUNCTION: clean
+ * DESCRIPTION: Frees all memory associated with the hash table and its parcels.
+ * PARAMETERS: HashTable* hashTable - The hash table to clean.
+ * RETURNS: None.
+ */
+void clean(HashTable* hashTable) {
+    // Free the parcels using a helper function
+    for (int i = 0; i < HASH_TABLE_SIZE; ++i) {
+        Parcel* parcel = hashTable->table[i];
+        // Traverse the BST to free all parcels
+        while (parcel) {
+            Parcel* next = parcel->right;
+            free(parcel->destination);
+            free(parcel);
+            parcel = next;
+        }
     }
+    free(hashTable);
 }
 
+/*
+ * FUNCTION: totalLoadAndValuation
+ * DESCRIPTION: Calculates the total load and valuation of all parcels in the BST.
+ * PARAMETERS: Parcel* root - The root of the BST.
+ *             int* totalLoad - Pointer to store the total load.
+ *             float* totalValuation - Pointer to store the total valuation.
+ * RETURNS: None.
+ */
 void totalLoadAndValuation(Parcel* root, int* totalLoad, float* totalValuation) {
     if (root == NULL) {
         return;
@@ -259,6 +370,12 @@ void totalLoadAndValuation(Parcel* root, int* totalLoad, float* totalValuation) 
     totalLoadAndValuation(root->right, totalLoad, totalValuation);
 }
 
+/*
+ * FUNCTION: findMin
+ * DESCRIPTION: Finds the parcel with the minimum weight in the BST.
+ * PARAMETERS: Parcel* root - The root of the BST.
+ * RETURNS: A pointer to the Parcel with the minimum weight.
+ */
 Parcel* findMin(Parcel* root) {
     while (root && root->left != NULL) {
         root = root->left;
@@ -266,6 +383,12 @@ Parcel* findMin(Parcel* root) {
     return root;
 }
 
+/*
+ * FUNCTION: findMax
+ * DESCRIPTION: Finds the parcel with the maximum weight in the BST.
+ * PARAMETERS: Parcel* root - The root of the BST.
+ * RETURNS: A pointer to the Parcel with the maximum weight.
+ */
 Parcel* findMax(Parcel* root) {
     while (root && root->right != NULL) {
         root = root->right;
@@ -273,39 +396,69 @@ Parcel* findMax(Parcel* root) {
     return root;
 }
 
+/*
+ * FUNCTION: handleCountryName
+ * DESCRIPTION: Prompts the user to enter a country name and computes its hash index.
+ * PARAMETERS: char* country - Buffer to store the country name.
+ *             unsigned long* hashIndex - Pointer to store the computed hash index.
+ *             HashTable* hashTable - The hash table to check for the country.
+ * RETURNS: 1 if the country exists in the hash table, 0 otherwise.
+ */
 int handleCountryName(char* country, unsigned long* hashIndex, HashTable* hashTable) {
     printf("Enter country name: ");
     if (fgets(country, 21, stdin) == NULL) {  // Use the correct buffer size
-        printf("Error reading country name.\n");
+        printf("Error reading country name.\n\n");
         return 0;
     }
     country[strcspn(country, "\n")] = '\0';  // Remove newline character
-    toLowerCase(country);  // Convert the input to lowercase
+
+    // Convert country to lowercase here
+    for (char* p = country; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
+
     *hashIndex = djb2_hash(country);
 
     // Check if the country exists in the hash table at the given index
     return isCountryInHashTable(hashTable->table[*hashIndex], country);
 }
 
-
+/*
+ * FUNCTION: isCountryInHashTable
+ * DESCRIPTION: Checks if a country is present in the hash table.
+ * PARAMETERS: Parcel* root - The root of the BST in the hash table bucket.
+ *             const char* country - The country to check.
+ * RETURNS: 1 if the country is found, 0 otherwise.
+ */
 int isCountryInHashTable(Parcel* root, const char* country) {
     return searchParcelByDestination(root, country) != NULL;
 }
 
+/*
+ * FUNCTION: handleWeightInput
+ * DESCRIPTION: Prompts the user to enter a weight value and validates the input.
+ * PARAMETERS: int* weight - Pointer to store the entered weight.
+ *             int* success - Pointer to indicate whether the input was successful.
+ * RETURNS: None.
+ */
 void handleWeightInput(int* weight, int* success) {
     printf("Enter weight: ");
     if (scanf_s("%d", weight) == 1) {
         *success = 1;  // Valid input received
     }
     else {
-        printf("Invalid input for weight. Please enter a number.\n");
+        printf("Invalid input for weight. Please enter a number.\n\n");
         *success = 0;  // Invalid input
     }
     while (getchar() != '\n');  // Clear any leftover characters in the input buffer
 }
 
-
-
+/*
+ * FUNCTION: handleConditionInput
+ * DESCRIPTION: Prompts the user to enter a condition (1 for higher, 0 for lower) and validates the input.
+ * PARAMETERS: int* condition - Pointer to store the entered condition.
+ * RETURNS: None.
+ */
 void handleConditionInput(int* condition) {
     printf("Enter 1 for higher or 0 for lower: ");
     if (scanf_s("%d", condition) != 1 || (*condition != 0 && *condition != 1)) {
@@ -315,6 +468,12 @@ void handleConditionInput(int* condition) {
     while (getchar() != '\n'); // Clear input buffer
 }
 
+/*
+ * FUNCTION: handleUserMenu
+ * DESCRIPTION: Displays the user menu and handles user input for various operations on the hash table.
+ * PARAMETERS: HashTable* hashTable - The hash table to operate on.
+ * RETURNS: None.
+ */
 void handleUserMenu(HashTable* hashTable) {
     int choice;
     char inputBuffer[10];
@@ -332,7 +491,7 @@ void handleUserMenu(HashTable* hashTable) {
     int weightInputSuccess;
 
     while (1) {
-        printf("User Menu:\n");
+        printf("\nUser Menu:\n");
         printf("1. Enter country name and display all the parcels details\n");
         printf("2. Enter country and weight pair\n");
         printf("3. Display the total parcel load and valuation for the country\n");
@@ -437,10 +596,7 @@ void handleUserMenu(HashTable* hashTable) {
             break;
 
         case 6:
-            for (int i = 0; i < HASH_TABLE_SIZE; ++i) {
-                freeParcel(hashTable->table[i]);
-            }
-            free(hashTable);
+            clean(hashTable);
             return;
         default:
             printf("Invalid choice. Please select a valid menu option.\n");
