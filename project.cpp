@@ -4,7 +4,6 @@
 #include <errno.h>
 #include <ctype.h>
 
-
 #pragma warning(disable:4996)
 
 #define HASH_TABLE_SIZE 127
@@ -21,22 +20,25 @@ typedef struct HashTable {
     Parcel* table[HASH_TABLE_SIZE];
 } HashTable;
 
+//function prototype
 unsigned long djb2_hash(const char* str);
 Parcel* createParcel(const char* destination, int weight, float valuation);
 void insertParcel(Parcel** root, const char* destination, int weight, float valuation);
 Parcel* searchParcel(Parcel* root, int weight);
 Parcel* searchParcelByDestination(Parcel* root, const char* destination);
 void printParcel(Parcel* parcel);
-void printAllParcels(Parcel* root);
-void printParcelsWithCondition(Parcel* root, int weight, int condition);
+void printAllParcels(Parcel* root, const char* country);
+void printParcelsWithCondition(Parcel* root, int weight, int condition, const char* country);
 HashTable* createHashTable();
 void clean(HashTable* hashTable);
-void totalLoadAndValuation(Parcel* root, int* totalLoad, float* totalValuation);
-Parcel* findMin(Parcel* root);
-Parcel* findMax(Parcel* root);
+void totalLoadAndValuation(Parcel* root, const char* country, int* totalLoad, float* totalValuation);
+Parcel* findMinValuation(Parcel* root, const char* country);
+Parcel* findMaxValuation(Parcel* root, const char* country);
+Parcel* findMinWeight(Parcel* root, const char* country);
+Parcel* findMaxWeight(Parcel* root, const char* country);
 int handleCountryName(char* country, unsigned long* hashIndex, HashTable* hashTable);
 int isCountryInHashTable(Parcel* root, const char* country);
-void handleWeightInput(int* weight);
+void handleWeightInput(int* weight, int* success);
 void handleConditionInput(int* condition);
 void handleUserMenu(HashTable* hashTable);
 
@@ -244,7 +246,7 @@ Parcel* searchParcelByDestination(Parcel* root, const char* destination) {
 
 void printParcel(Parcel* parcel) {
     if (parcel) {
-        printf("Destination: %s, Weight: %d, Valuation: %.2f\n\n", parcel->destination, parcel->weight, parcel->valuation);
+        printf("Destination: %s, Weight: %d, Valuation: %.2f\n", parcel->destination, parcel->weight, parcel->valuation);
     }
     else {
         printf("Parcel not found.\n\n");
@@ -354,46 +356,175 @@ void clean(HashTable* hashTable) {
 
 /*
  * FUNCTION: totalLoadAndValuation
- * DESCRIPTION: Calculates the total load and valuation of all parcels in the BST.
+ * DESCRIPTION: Calculates the total load and valuation of all parcels in the BST for a specific country.
  * PARAMETERS: Parcel* root - The root of the BST.
+ *             const char* country - The country to match.
  *             int* totalLoad - Pointer to store the total load.
  *             float* totalValuation - Pointer to store the total valuation.
  * RETURNS: None.
  */
-void totalLoadAndValuation(Parcel* root, int* totalLoad, float* totalValuation) {
+void totalLoadAndValuation(Parcel* root, const char* country, int* totalLoad, float* totalValuation) {
     if (root == NULL) {
         return;
     }
-    *totalLoad += root->weight;
-    *totalValuation += root->valuation;
-    totalLoadAndValuation(root->left, totalLoad, totalValuation);
-    totalLoadAndValuation(root->right, totalLoad, totalValuation);
+
+    // Convert country to lowercase and compare
+    char lowerCountry[21];
+    strcpy_s(lowerCountry, sizeof(lowerCountry), country);
+    for (char* p = lowerCountry; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
+
+    if (strcmp(root->destination, lowerCountry) == 0) {
+        *totalLoad += root->weight;
+        *totalValuation += root->valuation;
+    }
+    totalLoadAndValuation(root->left, country, totalLoad, totalValuation);
+    totalLoadAndValuation(root->right, country, totalLoad, totalValuation);
 }
 
 /*
- * FUNCTION: findMin
- * DESCRIPTION: Finds the parcel with the minimum weight in the BST.
+ * FUNCTION: findMinValuation
+ * DESCRIPTION: Finds the parcel with the minimum valuation for the given country in the BST.
  * PARAMETERS: Parcel* root - The root of the BST.
+ *             const char* country - The country to match.
+ * RETURNS: A pointer to the Parcel with the minimum valuation.
+ */
+Parcel* findMinValuation(Parcel* root, const char* country) {
+    if (root == NULL) {
+        return NULL;
+    }
+
+    char lowerCountry[21];
+    strcpy_s(lowerCountry, sizeof(lowerCountry), country);
+    for (char* p = lowerCountry; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
+
+    Parcel* minParcel = NULL;
+    if (strcmp(root->destination, lowerCountry) == 0) {
+        minParcel = root;
+    }
+
+    Parcel* leftMin = findMinValuation(root->left, country);
+    Parcel* rightMin = findMinValuation(root->right, country);
+
+    if (leftMin != NULL && (minParcel == NULL || leftMin->valuation < minParcel->valuation)) {
+        minParcel = leftMin;
+    }
+    if (rightMin != NULL && (minParcel == NULL || rightMin->valuation < minParcel->valuation)) {
+        minParcel = rightMin;
+    }
+
+    return minParcel;
+}
+
+/*
+ * FUNCTION: findMaxValuation
+ * DESCRIPTION: Finds the parcel with the maximum valuation for the given country in the BST.
+ * PARAMETERS: Parcel* root - The root of the BST.
+ *             const char* country - The country to match.
+ * RETURNS: A pointer to the Parcel with the maximum valuation.
+ */
+Parcel* findMaxValuation(Parcel* root, const char* country) {
+    if (root == NULL) {
+        return NULL;
+    }
+
+    char lowerCountry[21];
+    strcpy_s(lowerCountry, sizeof(lowerCountry), country);
+    for (char* p = lowerCountry; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
+
+    Parcel* maxParcel = NULL;
+    if (strcmp(root->destination, lowerCountry) == 0) {
+        maxParcel = root;
+    }
+
+    Parcel* leftMax = findMaxValuation(root->left, country);
+    Parcel* rightMax = findMaxValuation(root->right, country);
+
+    if (leftMax != NULL && (maxParcel == NULL || leftMax->valuation > maxParcel->valuation)) {
+        maxParcel = leftMax;
+    }
+    if (rightMax != NULL && (maxParcel == NULL || rightMax->valuation > maxParcel->valuation)) {
+        maxParcel = rightMax;
+    }
+
+    return maxParcel;
+}
+
+/*
+ * FUNCTION: findMinWeight
+ * DESCRIPTION: Finds the parcel with the minimum weight for the given country in the BST.
+ * PARAMETERS: Parcel* root - The root of the BST.
+ *             const char* country - The country to match.
  * RETURNS: A pointer to the Parcel with the minimum weight.
  */
-Parcel* findMin(Parcel* root) {
-    while (root && root->left != NULL) {
-        root = root->left;
+Parcel* findMinWeight(Parcel* root, const char* country) {
+    if (root == NULL) {
+        return NULL;
     }
-    return root;
+
+    char lowerCountry[21];
+    strcpy_s(lowerCountry, sizeof(lowerCountry), country);
+    for (char* p = lowerCountry; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
+
+    Parcel* minParcel = NULL;
+    if (strcmp(root->destination, lowerCountry) == 0) {
+        minParcel = root;
+    }
+
+    Parcel* leftMin = findMinWeight(root->left, country);
+    Parcel* rightMin = findMinWeight(root->right, country);
+
+    if (leftMin != NULL && (minParcel == NULL || leftMin->weight < minParcel->weight)) {
+        minParcel = leftMin;
+    }
+    if (rightMin != NULL && (minParcel == NULL || rightMin->weight < minParcel->weight)) {
+        minParcel = rightMin;
+    }
+
+    return minParcel;
 }
 
 /*
- * FUNCTION: findMax
- * DESCRIPTION: Finds the parcel with the maximum weight in the BST.
+ * FUNCTION: findMaxWeight
+ * DESCRIPTION: Finds the parcel with the maximum weight for the given country in the BST.
  * PARAMETERS: Parcel* root - The root of the BST.
+ *             const char* country - The country to match.
  * RETURNS: A pointer to the Parcel with the maximum weight.
  */
-Parcel* findMax(Parcel* root) {
-    while (root && root->right != NULL) {
-        root = root->right;
+Parcel* findMaxWeight(Parcel* root, const char* country) {
+    if (root == NULL) {
+        return NULL;
     }
-    return root;
+
+    char lowerCountry[21];
+    strcpy_s(lowerCountry, sizeof(lowerCountry), country);
+    for (char* p = lowerCountry; *p; ++p) {
+        *p = tolower((unsigned char)*p);
+    }
+
+    Parcel* maxParcel = NULL;
+    if (strcmp(root->destination, lowerCountry) == 0) {
+        maxParcel = root;
+    }
+
+    Parcel* leftMax = findMaxWeight(root->left, country);
+    Parcel* rightMax = findMaxWeight(root->right, country);
+
+    if (leftMax != NULL && (maxParcel == NULL || leftMax->weight > maxParcel->weight)) {
+        maxParcel = leftMax;
+    }
+    if (rightMax != NULL && (maxParcel == NULL || rightMax->weight > maxParcel->weight)) {
+        maxParcel = rightMax;
+    }
+
+    return maxParcel;
 }
 
 /*
@@ -542,10 +673,10 @@ void handleUserMenu(HashTable* hashTable) {
 
         case 3:
             if (handleCountryName(country, &hashIndex, hashTable)) {
-                if (hashTable->table[hashIndex] != NULL && strcmp(hashTable->table[hashIndex]->destination, country) == 0) {
+                if (hashTable->table[hashIndex] != NULL) {
                     totalLoad = 0;
                     totalValuation = 0.0f;
-                    totalLoadAndValuation(hashTable->table[hashIndex], &totalLoad, &totalValuation);
+                    totalLoadAndValuation(hashTable->table[hashIndex], country, &totalLoad, &totalValuation);
                     printf("Total Load: %d, Total Valuation: %.2f\n", totalLoad, totalValuation);
                 }
                 else {
@@ -559,9 +690,11 @@ void handleUserMenu(HashTable* hashTable) {
 
         case 4:
             if (handleCountryName(country, &hashIndex, hashTable)) {
-                if (hashTable->table[hashIndex] != NULL && strcmp(hashTable->table[hashIndex]->destination, country) == 0) {
-                    minParcel = findMin(hashTable->table[hashIndex]);
-                    maxParcel = findMax(hashTable->table[hashIndex]);
+                Parcel* root = hashTable->table[hashIndex];
+                if (root != NULL) {
+                    minParcel = findMinValuation(root, country);
+                    maxParcel = findMaxValuation(root, country);
+
                     printf("Cheapest Parcel:\n");
                     printParcel(minParcel);
                     printf("Most Expensive Parcel:\n");
@@ -578,9 +711,11 @@ void handleUserMenu(HashTable* hashTable) {
 
         case 5:
             if (handleCountryName(country, &hashIndex, hashTable)) {
-                if (hashTable->table[hashIndex] != NULL && strcmp(hashTable->table[hashIndex]->destination, country) == 0) {
-                    lightestParcel = findMin(hashTable->table[hashIndex]);
-                    heaviestParcel = findMax(hashTable->table[hashIndex]);
+                Parcel* root = hashTable->table[hashIndex];
+                if (root != NULL) {
+                    lightestParcel = findMinWeight(root, country);
+                    heaviestParcel = findMaxWeight(root, country);
+
                     printf("Lightest Parcel:\n");
                     printParcel(lightestParcel);
                     printf("Heaviest Parcel:\n");
@@ -597,6 +732,8 @@ void handleUserMenu(HashTable* hashTable) {
 
         case 6:
             clean(hashTable);
+            printf("Now the code is ended.\n");
+            printf("Good bye.. see you soon..\n\n");
             return;
         default:
             printf("Invalid choice. Please select a valid menu option.\n");
